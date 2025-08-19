@@ -71,11 +71,6 @@ pipe.fit(X_train, y_train)
 train_pred = pipe.predict(X_train)
 test_pred  = pipe.predict(X_test)
 
-print("Train accuracy:", accuracy_score(y_train, train_pred))
-print("Test  accuracy:",  accuracy_score(y_test,  test_pred))
-print("\nClassification report (test):\n",
-      classification_report(y_test, test_pred, digits=4))
-print("Confusion matrix (test):\n", confusion_matrix(y_test, test_pred))
 
 os.makedirs("models", exist_ok=True)
 out_path = "models/phish_pipeline.joblib"
