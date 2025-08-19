@@ -1,20 +1,26 @@
 from fastapi import FastAPI
 from typing import Optional, List
 from pydantic import BaseModel
+import joblib
+import os
+
 
 
 
 app = FastAPI(title="Scam Email Detector", version="0.0.1")
+model = os.getenv("model", "models/phish_pipeline.joblib")
+
+pipeline = joblib.load(model)
 
 class Email(BaseModel):
     subject: Optional[str] = ""
     body: str
-    send: Optional[str] = ""
+    sender: Optional[str] = ""
 
 class Prediction(BaseModel):
     scam_probability: float
     label: str
-    reason: List[str]
+    reasons: List[str]
 
 
 @app.get("/health")
@@ -24,13 +30,12 @@ def health():
 
 @app.post("/predict", response_model=Prediction)  
 def predict(email: Email):
-    text = f"{email.subject}\n{email.body}".lower()
+    text = f"{email.subject or ''}\n{email.body or ''}\n{email.sender or ''}"
+
+    prob = float(pipeline.predict_proba([text])[0][1]) 
+    label = "scam" if prob >= 0.5 else "legit"
 
     risky_terms = ["urgent", "verify", "gift card", "password", "wire", "limited time"]
-    hits = [t for t in risky_terms if t in text]
+    reasons = [f"found risky term: '{t}'" for t in risky_terms if t in text.lower()] or ["model prediction"]
 
-    score = min(len(hits) * 0.2, 0.95)
-    label = "scam" if score >= 0.5 else "legit"
-    reasons = [f"found risky term: '{t}'" for t in hits] or ["no obvious risky terms"]
-
-    return Prediction(scam_probability=score, label=label, reason=reasons)
+    return Prediction(scam_probability=prob, label=label, reasons=reasons)
