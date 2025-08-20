@@ -33,7 +33,14 @@ def predict(email: Email):
     text = f"{email.subject or ''}\n{email.body or ''}\n{email.sender or ''}"
 
     prob = float(pipeline.predict_proba([text])[0][1]) 
-    label = "scam" if prob >= 0.5 else "legit"
+
+    if prob >= 0.5 and prob <= 0.8:
+        label = "Possibly a scam"
+    elif prob > 0.8:
+        label = "scam"
+    else:
+        label = "legit"
+   
 
     risky_terms = ["urgent", "verify", "gift card", "password", "wire", "limited time"]
     reasons = [f"found risky term: '{t}'" for t in risky_terms if t in text.lower()] or ["model prediction"]
